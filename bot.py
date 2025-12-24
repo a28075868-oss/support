@@ -1,32 +1,33 @@
-import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardRemove
-from aiogram.utils.keyboard import ReplyKeyboardRemove
+import asyncio
 
-BOT_TOKEN = os.getenv("8274127593:AAHJdVCUOrxMCZtKDuFgumhMT3CMhJGEQEA")  # Токен бота
-ADMIN_ID = int(os.getenv("7394719247"))  # Твой Telegram ID
+# Вставь сюда свои данные
+BOT_TOKEN = "8274127593:AAHJdVCUOrxMCZtKDuFgumhMT3CMhJGEQEA"
+ADMIN_ID = 7394719247  # Например: 123456789
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Словарь, чтобы отслеживать пользователей, которые уже отправили сообщение
-user_submitted = {}
+# Отслеживаем пользователей, которые уже отправили жалобу
+user_submitted = set()
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
-    if message.from_user.id not in user_submitted:
-        text = (
-            "Привет! Я саппорт проекта Luminius.\n\n"
-            "Пожалуйста, отправьте жалобу на баг или дюп **в одном сообщении**, строго по форме:\n"
-            "1. Что за баг или дюп\n"
-            "2. Как он работает или делается\n"
-            "3. Ваш игровой никнейм\n\n"
-            "⚠️ Строго всё в одном сообщении."
-        )
-        await message.answer(text, reply_markup=ReplyKeyboardRemove())
-    else:
+    if message.from_user.id in user_submitted:
         await message.answer("Вы уже отправляли жалобу, ждите ответа администратора.")
+        return
+
+    text = (
+        "Привет! Я саппорт проекта Luminius.\n\n"
+        "Пожалуйста, отправьте жалобу на баг или дюп **в одном сообщении**, строго по форме:\n"
+        "1. Что за баг или дюп\n"
+        "2. Как он работает или делается\n"
+        "3. Ваш игровой никнейм\n\n"
+        "⚠️ Строго всё в одном сообщении."
+    )
+    await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 @dp.message()
 async def bug_report_handler(message: types.Message):
@@ -37,7 +38,7 @@ async def bug_report_handler(message: types.Message):
         return
 
     # Отмечаем, что пользователь отправил жалобу
-    user_submitted[user_id] = message.text
+    user_submitted.add(user_id)
 
     # Пересылаем администратору
     report_text = (
@@ -46,14 +47,12 @@ async def bug_report_handler(message: types.Message):
     )
     await bot.send_message(ADMIN_ID, report_text)
 
-    # Отвечаем пользователю
+    # Отправляем автоответ игроку
     await message.answer(
         "Спасибо за жалобу! Мы рассмотрим её и ответим в кратчайшие сроки."
     )
 
 if __name__ == "__main__":
     import asyncio
-    from aiogram import F
     from aiogram import main
-
     main(dp)
